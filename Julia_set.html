@@ -1,0 +1,194 @@
+<!doctype html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="Cache-Control" content="no-cache" />	
+		<script>
+			function Coord(width, height, xMin, xMax, yMin, yMax) 
+			{
+				this.width = width;
+				this.height = height;
+				this.xMin = xMin;
+				this.xMax = xMax;
+				this.yMin = yMin;
+				this.yMax = yMax;
+			}
+
+			Coord.prototype = 
+			{
+				getX: function(x) 
+				{
+					return this.xMin + x*(this.xMax - this.xMin)/this.width;
+				},
+				getY: function(y) 
+				{
+					return this.yMax + y*(this.yMin - this.yMax)/this.height;
+				}
+			};
+			
+			var canvas, context, canvasHeight, canvasWidth, imageData, coord;
+						
+			function setPixel(i, j, colors) 
+			{
+				imageData.data[4*(j*canvasWidth + i)] = colors.red;
+				imageData.data[4*(j*canvasWidth + i) + 1] = colors.green;
+				imageData.data[4*(j*canvasWidth + i) + 2] = colors.blue;
+				imageData.data[4*(j*canvasWidth + i) + 3] = 255;
+			}
+			
+			function getColors(root, fractal, k, n) 
+			{
+				var red, green, blue;
+				if (root == 1) 
+				{
+					if (fractal == "classical") 
+					{
+						red = (k == 0) ? 0 : 255;
+						green = (k == 0) ? 0 : 255;
+						blue = (k == 0) ? 0 : 255;
+					}		
+					else 
+						if (fractal == "levels") 
+						{
+							red = 255*Math.log(1 + k)/Math.log(n);
+							green = 255*Math.log(1 + k)/Math.log(n);
+							blue = 255*Math.log(1 + k)/Math.log(n);			
+						}
+						else
+							if (fractal == "zebra") 
+							{
+								if (k%2 || k == 0) 
+								{
+									red = (k == 0) ? 0 : 255;
+									green = (k == 0) ? 0 : 255;
+									blue = (k == 0) ? 0 : 255;
+								}
+							}
+				}
+				else 
+				{
+					red = 0;
+					green = 0;
+					blue = 0;
+				}
+				return {red: red, green: green, blue: blue}
+			}
+			
+			function draw(i, j, n, fractal, cX, cY) 
+			{
+				var x = coord.getX(i); 
+				var y = coord.getY(j); 
+				var root, colors;
+				
+				for (var k = 0; k < n; k++) 
+				{
+					var xNew = x*x - y*y + cX;
+					var yNew = 2*x*y + cY;
+					
+					if (k == 0 && x*x + y*y < 4)
+						continue;
+					if (xNew*xNew + yNew*yNew > 4) 
+					{
+						root = 1;
+						break;
+					}
+					else
+						root = 0;
+						
+					x = xNew;
+					y = yNew;
+				}
+				
+				colors = getColors(root, fractal, k, n);
+				setPixel(i, j, colors);
+			}
+			
+			function julia() 
+			{
+				var n = parseInt(document.getElementById('iter').value);
+				var fractal = document.getElementById("fractal").value;
+				var cX = parseFloat(document.getElementById('cX').value);
+				var cY = parseFloat(document.getElementById('cY').value);
+				
+				for (var i = 0; i < canvasWidth; i++)
+					for (var j = 0; j < canvasHeight; j++) 
+						draw(i, j, n, fractal, cX, cY);	
+					
+				context.putImageData(imageData, 0, 0);
+			}
+			
+			function getPosition(mouseEvent) 
+			{
+				var x, y;
+				if (mouseEvent.pageX !== undefined && mouseEvent.pageY !== undefined) 
+				{
+					x = mouseEvent.pageX;
+					y = mouseEvent.pageY;
+				} 
+				else 
+				{
+					x = mouseEvent.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+					y = mouseEvent.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+				}
+				
+				return {X: x - canvas.offsetLeft, Y: y - canvas.offsetTop};
+			}
+			
+			function doMouseDown(event)
+			{
+				var pos = getPosition(event, canvas);
+				var newWidth = (coord.xMax - coord.xMin)/4;
+				var newHeight = (coord.yMax - coord.yMin)/4;
+				var newX = coord.getX(pos.X);
+				var newY = coord.getY(pos.Y);
+				
+				coord.xMin = newX - newWidth;
+				coord.xMax = newX + newWidth;
+				coord.yMin = newY - newHeight;
+				coord.yMax = newY + newHeight;
+				
+				julia();
+			}
+			
+			function run() 
+			{
+				var n = 2.1;
+				canvas = document.getElementById("canvas");
+				context = canvas.getContext("2d");
+				canvasWidth = parseInt(canvas.getAttribute("width"));
+				canvasHeight = parseInt(canvas.getAttribute("height"));
+				imageData = context.createImageData(canvasWidth, canvasHeight);
+				coord = new Coord(canvasWidth, canvasHeight, -n, n, -n, n);
+				
+				julia();
+				
+				document.getElementById("reset").onclick = function() 
+				{
+					coord.xMin = -n;
+					coord.xMax = n;
+					coord.yMin = -n;
+					coord.yMax = n; 
+					julia();
+				};
+				
+				canvas.addEventListener("mousedown", doMouseDown, false);
+			}	
+		</script>
+	</head>
+	<body onload="run()">
+		Choose coloring, number of iterations and number C<br>
+		To enlarge at the desired point, click LMB on the picture<br>
+		To reset the scale, click "Reset"<br>
+		<select id="fractal">
+			<option type="text" value="classical">Classical</option>
+			<option type="text" value="levels">Levels</option>
+			<option type="text" value="zebra">Zebra</option>
+		</select><br>
+		<input type="number" id="iter" value="100"><br>
+		C=<input type="text" id="cX" value="-0.12">+i*<input type="text" id="cY" value="0.74">
+		<input type="button" value="Draw" onClick="run()"><br>
+		<button id="reset">Reset</button><br><br>
+		
+		<canvas height='490' width='490' id='canvas' />
+	</body>
+</html>

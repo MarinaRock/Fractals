@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="Cache-Control" content="no-cache" />
+		<script>	
+			function Lsystem(word, newF, n) 
+			{
+				while (n > 0)
+				{
+					var temp = "";
+					for (var i = 0; i < word.length; i++)
+						switch (word[i])
+						{
+							case 'F':
+								temp += newF;
+								break;
+							case '+':
+							case '-':
+							case '[':
+							case ']':
+								temp += word[i];
+								break;
+						}
+					word = temp;
+					n--;
+				}
+				return word;
+			}
+			
+			function fractal(axiom, newF, n, q, x0, y0, a0, s, k)
+			{ 
+				var canvas = document.getElementById("canvas");			
+				var context = canvas.getContext('2d');
+				context.clearRect(0, 0, canvas.width, canvas.height);
+				context.beginPath();
+				
+				var word = Lsystem(axiom, newF, n);
+				
+				var stack = [];	
+				
+				for (var i = 0; i < word.length; i++)
+				{
+					switch (word[i])
+					{
+						case '+' : 
+							a0+= q;
+							break;
+						case '-' : 
+							a0-= q;
+							break;
+						case 'F' : 
+						{
+							var x = x0 + s * Math.cos(a0 * Math.PI / 180);
+							var y = y0 + s * Math.sin(a0 * Math.PI / 180);
+							context.moveTo(x0, y0);
+							context.lineTo(x, y);
+							x0 = x;
+							y0 = y;
+							break;					
+						}
+						case '[' : 
+						{
+							stack.push(x0);
+							stack.push(y0);
+							stack.push(a0);
+							break;
+						}
+						case ']' :
+						{
+							a0 = stack.pop();
+							y0 = stack.pop();
+							x0 = stack.pop();
+							break;
+						}
+					}
+				}
+				
+				context.closePath();
+				context.stroke();
+			} 
+			
+			function run()
+			{
+				var n = parseInt(document.getElementById('n').value);
+				var x0 = parseFloat(document.getElementById('x0').value);
+				var y0 = parseFloat(document.getElementById('y0').value);
+				var a0 = parseFloat(document.getElementById('a0').value);
+				var s = parseInt(document.getElementById('s').value);
+				
+				if (document.getElementById("fractal").value == "bush")
+					fractal("F", "-F+F+[+F-F-]-[-F+F+F]", n, 22.5, x0, y0, a0, s);
+				else
+					fractal("[F]+[F]+[F]+[F]+[F]+[F]", "F[+FF][-FF]FF[+F][-F]FF", n, 60, x0, y0, a0, s);
+			}
+		</script>
+	</head>
+	<body onload="run()">
+		<form>
+			<select id="fractal">
+				<option type="text" value="bush">Bush</option>
+				<option type="text" value="snowflake">Snowflake</option>
+			</select><br>
+			Enter the number of iterations<br>
+			<input type="number" id="n" value="5"><br>
+			Enter the starting position and starting direction (in degrees)<br>
+			<input type="number" id="x0" value="300"><br>
+			<input type="number" id="y0" value="500"><br>
+			<input type="text" id="a0" value="-50"><br>
+			Choose stride length<br>
+			<input type="range" min="0" max="10" step="1" id="s" oninput="run()" value="5" list=iterSettings>
+			<datalist id=iterSettings>
+				<option>0</option>
+				<option>1</option>
+				<option>2</option>
+				<option>3</option>
+				<option>4</option>
+				<option>5</option>
+				<option>6</option>
+				<option>7</option>
+				<option>8</option>
+				<option>9</option>
+				<option>10</option>
+			</datalist>
+
+			<input type="button" value="Draw" onClick="run()"> 
+		</form>
+
+		<canvas height='1000' width='1000' id='canvas' />
+	</body>
+</html>

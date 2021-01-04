@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="Cache-Control" content="no-cache" />
+		<script>		
+			function fern(canvasWidth, canvasHeight, context, n)
+			{ 
+				var fernAffine = [[0, 0, 0, 0.16, 0, 0],
+								 [0.85, 0.04, -0.04, 0.85, 0, 1.6],
+								 [0.2, -0.26, 0.23, 0.22, 0, 1.6],
+								 [-0.15, 0.28, 0.26, 0.24, 0, 0.44]];           
+				var probability = [0.01, 0.86, 0.93, 1.0];   
+
+				var imageData = context.createImageData(canvasWidth, canvasHeight);
+						
+				var x = 0;            
+				var y = 0;
+				var xn, yn, xp, yp;
+					
+				for (var i = 0; i < n; i++) 
+				{
+					var p = Math.random();                		
+					var k = 0;
+					while (p > probability[k]) 
+						k++; 
+						
+					xn = fernAffine[k][0]*x + fernAffine[k][1]*y + fernAffine[k][4];
+					yn = fernAffine[k][2]*x + fernAffine[k][3]*y + fernAffine[k][5];
+					x = xn;
+					y = yn;
+					 
+					xp = canvasWidth/2 + Math.floor(x*50);             
+					yp = canvasHeight - Math.floor(y*50);
+
+					imageData.data[4*(xp + canvasWidth*yp) + 0] = 0;
+					imageData.data[4*(xp + canvasWidth*yp) + 1] = 180;
+					imageData.data[4*(xp + canvasWidth*yp) + 2] = 0;
+					imageData.data[4*(xp + canvasWidth*yp) + 3] = 255;
+				}			
+					context.putImageData(imageData, 0, 0);
+			}
+			
+			function run()
+			{ 
+				var canvas = document.getElementById("canvas");
+				var canvasWidth = parseInt(canvas.getAttribute("width"));
+				var canvasHeight = parseInt(canvas.getAttribute("height"));			
+				var context = canvas.getContext('2d');
+				
+				var n = parseInt(document.getElementById('n').value);
+				
+				context.clearRect(0, 0, canvas.width, canvas.height);   
+				
+				fern(canvasWidth, canvasHeight, context, n);
+			} 
+		</script>	
+	</head>
+	<body onload="run()">
+		<form>
+			Enter the number of iterations<br>
+			<input type="number" id="n" value="500000"><br>
+			<input type="button" value="Draw" onClick="run()"> 
+		</form>
+		
+		<canvas height='520' width='520' id='canvas' />
+	</body>
+</html>

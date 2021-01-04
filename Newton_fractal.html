@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="Cache-Control" content="no-cache" />	
+		<script>
+			function Coord(width, height, xMin, xMax, yMin, yMax) 
+			{
+				this.width = width;
+				this.height = height;
+				this.xMin = xMin;
+				this.xMax = xMax;
+				this.yMin = yMin;
+				this.yMax = yMax;
+			}
+
+			Coord.prototype = 
+			{
+				getX: function(x) 
+				{
+					return this.xMin + x*(this.xMax - this.xMin)/this.width;
+				},
+				getY: function(y) 
+				{
+					return this.yMax + y*(this.yMin - this.yMax)/this.height;
+				}
+			};
+
+			var canvas, context, canvasHeight, canvasWidth, imageData, coord;
+			
+			function setPixel(i, j, r, g, b, t)
+			{
+				imageData.data[4*(j*canvasWidth + i)] = r;
+				imageData.data[4*(j*canvasWidth + i) + 1] = g;
+				imageData.data[4*(j*canvasWidth + i) + 2] = b;
+				imageData.data[4*(j*canvasWidth + i) + 3] = t;
+			}
+			
+			function newton() 
+			{
+				var n = parseInt(document.getElementById('iter').value);
+				var fractal = document.getElementById("fractal");
+
+				for (var i = 0; i < canvasWidth; i++) 
+					for (var j = 0; j < canvasHeight; j++) 
+					{
+						var x = coord.getX(i); 
+						var y = coord.getY(j); 
+						
+						for (var k = 0; k < n; k++) 
+						{
+							newX = 2/3*x + 1/3*(x*x - y*y)/((x*x + y*y)*(x*x + y*y));
+							newY = 2/3*y*(1 - x/((x*x + y*y)*(x*x + y*y)));
+							
+							if (fractal.value == "classical") 
+							{
+								if ((newX - 1)*(newX - 1) + newY*newY < 0.00000001) 
+								{
+									setPixel(i, j, 255, 0, 0, 255);
+									break;
+								}
+								if ((newX + 0.5)*(newX + 0.5) + (newY - Math.sin(2*Math.PI/3))*(newY - Math.sin(2*Math.PI/3)) < 0.00000001) 
+								{
+									setPixel(i, j, 0, 255, 0, 255);
+									break;
+								}
+								if ((newX + 0.5)*(newX + 0.5) + (newY + Math.sin(2*Math.PI/3))*(newY + Math.sin(2*Math.PI/3)) < 0.00000001) 
+								{
+									setPixel(i, j, 0, 0, 255, 255);
+									break;
+								}
+							}
+							
+							if (fractal.value == "levels") 
+							{
+								if ((newX - 1)*(newX - 1) + newY*newY < 0.00000001 || (newX + 0.5)*(newX + 0.5) + (newY - Math.sin(2*Math.PI/3))*(newY - Math.sin(2*Math.PI/3)) < 0.00000001 || (newX + 0.5)*(newX + 0.5) + (newY + Math.sin(2*Math.PI/3))*(newY + Math.sin(2*Math.PI/3)) < 0.00000001) 
+								{
+									setPixel(i, j, n > 1 ? 255*Math.log(1 + k)/Math.log(n) : 0, n > 1 ? 255*Math.log(1 + k)/Math.log(n) : 0, 0, 255);
+									break;
+								}
+							}
+							
+							if (fractal.value == "zebra") 
+							{
+								if ((newX - 1)*(newX - 1) + newY*newY < 0.00000001 || (newX + 0.5)*(newX + 0.5) + (newY - Math.sin(2*Math.PI/3))*(newY - Math.sin(2*Math.PI/3)) < 0.00000001 || (newX + 0.5)*(newX + 0.5) + (newY + Math.sin(2*Math.PI/3))*(newY + Math.sin(2*Math.PI/3)) < 0.00000001)
+								{
+									if (k%2) 
+										setPixel(i, j, 0, 0, 0, 255);
+									break;
+								}	
+							}
+							
+							x = newX;
+							y = newY;
+						}		
+				}
+				
+				context.putImageData(imageData, 0, 0);
+			}
+			
+			function getPosition(mouseEvent) 
+			{
+				var x, y;
+				if (mouseEvent.pageX !== undefined && mouseEvent.pageY !== undefined) 
+				{
+					x = mouseEvent.pageX;
+					y = mouseEvent.pageY;
+				} 
+				else 
+				{
+					x = mouseEvent.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+					y = mouseEvent.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+				}
+				
+				return {X: x - canvas.offsetLeft, Y: y - canvas.offsetTop};
+			}
+			
+			function doMouseDown(event)
+			{
+				var pos = getPosition(event);
+				var newWidth = (coord.xMax - coord.xMin)/4;
+				var newHeight = (coord.yMax - coord.yMin)/4;
+				var newX = coord.getX(pos.X);
+				var newY = coord.getY(pos.Y);
+				
+				coord.xMin = newX - newWidth;
+				coord.xMax = newX + newWidth;
+				coord.yMin = newY - newHeight;
+				coord.yMax = newY + newHeight;
+				
+				newton();
+			}
+			
+			function run() 
+			{
+				var n = 5;
+				canvas = document.getElementById("canvas");
+				context = canvas.getContext('2d');
+				canvasWidth = parseInt(canvas.getAttribute("width"));
+				canvasHeight = parseInt(canvas.getAttribute("height"));
+				imageData = context.createImageData(canvasWidth, canvasHeight);				
+				coord = new Coord(canvasWidth, canvasHeight, -n, n, -n, n);	
+				
+				newton();		
+				
+				document.getElementById("reset").onclick = function() 
+				{
+					coord.xMin = -n;
+					coord.xMax = n;
+					coord.yMin = -n;
+					coord.yMax = n; 
+					newton();
+				};
+				
+				canvas.addEventListener("mousedown", doMouseDown, false);
+			}
+		</script>
+	</head>
+	<body onload="run()">
+		Choose a coloring and number of iterations<br>
+		To enlarge at the desired point, click LMB on the picture<br>
+		To reset the scale, click "Reset"<br>
+		<select id="fractal">
+			<option type="text" value="classical">Classical</option>
+			<option type="text" value="levels">Levels</option>
+			<option type="text" value="zebra">Zebra</option>
+		</select><br>
+		<input type="number" id="iter" value="100">
+		<input type="button" value="Draw" onClick="run()"><br>
+		<button id="reset">Reset</button><br><br>
+		
+		<canvas height='490' width='490' id='canvas' />
+	</body>
+</html>

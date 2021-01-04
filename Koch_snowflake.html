@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="Cache-Control" content="no-cache" />
+		<script>		
+			var cos60 = Math.cos(60 * Math.PI / 180);
+			var sin60 = Math.sin(60 * Math.PI / 180);
+			
+			function curve1(n, x1, y1, x2, y2, context)
+			{ 
+				if (n == 0)
+				{
+					context.moveTo(x1, y1);
+					context.lineTo(x2, y2);
+				}
+				else 
+				{ 			 
+					 var x3 = x1 + (x2 - x1) * 1/3;
+					 var y3 = y1 + (y2 - y1) * 1/3;
+					 var x5 = x1 + (x2 - x1) * 2/3;
+					 var y5 = y1 + (y2 - y1) * 2/3;
+					 var x4 = x3 + (x5 - x3) * cos60 + sin60 * (y5 - y3);
+					 var y4 = y3 + (x5 - x3) * (-sin60) + cos60 * (y5 - y3);
+					 
+					 curve1(n - 1, x1, y1, x3, y3, context);
+					 curve1(n - 1, x3, y3, x4, y4, context);
+					 curve1(n - 1, x4, y4, x5, y5, context);
+					 curve1(n - 1, x5, y5, x2, y2, context);  
+				} 
+			} 
+			
+			function curve2(n, x1, y1, x2, y2, context)
+			{ 
+				if (n == 0)
+				{
+					context.moveTo(x1, y1);
+					context.lineTo(x2, y2);
+				}
+				else 
+				{ 
+					 var x3 = x1 + (x2 - x1) * 1/3;
+					 var y3 = y1 + (y2 - y1) * 1/3;
+					 var x5 = x1 + (x2 - x1) * 2/3;
+					 var y5 = y1 + (y2 - y1) * 2/3;
+					 var x4 = x3 + (x5 - x3) * cos60 - sin60 * (y5 - y3);
+					 var y4 = y3 + (x5 - x3) * sin60 + cos60 * (y5 - y3);
+					 curve2(n - 1, x1, y1, x3, y3, context);
+					 curve2(n - 1, x3, y3, x4, y4, context);
+					 curve2(n - 1, x4, y4, x5, y5, context);
+					 curve2(n - 1, x5, y5, x2, y2, context);         
+				} 
+			} 
+			
+			function KochSnowflake(n, xa, xb, xc, ya, yb, yc)
+			{ 
+				var canvas = document.getElementById("canvas");	
+				var context = canvas.getContext('2d');
+				
+				context.clearRect(0, 0, canvas.width, canvas.height);
+				context.save();
+				context.strokeStyle = "red";
+				context.beginPath();
+				context.translate(400, 250);
+				
+				var dx1 = xb - xa;
+				var dx2 = xc - xb;
+				var dy1 = yb - ya;
+				var dy2 = yc - yb;
+				var r = dx1 * dy2 - dx2 * dy1;
+				
+				if (r > 0)
+				{
+					curve1(n, xa, ya, xb, yb, context);
+					curve1(n, xb, yb, xc, yc, context);
+					curve1(n, xc, yc, xa, ya, context);
+				}
+				else
+				{
+					curve2(n, xa, ya, xb, yb, context);
+					curve2(n, xb, yb, xc, yc, context);
+					curve2(n, xc, yc, xa, ya, context);
+				}
+				
+				context.closePath();
+				context.stroke();
+				context.restore();
+			} 
+			
+			function run()
+			{
+				var num = parseInt(document.getElementById('num').value);
+				var xa = parseFloat(document.getElementById('xa').value);
+				var xb = parseFloat(document.getElementById('xb').value);
+				var xc = parseFloat(document.getElementById('xc').value);
+				var ya = parseFloat(document.getElementById('ya').value);
+				var yb = parseFloat(document.getElementById('yb').value);
+				var yc = parseFloat(document.getElementById('yc').value);
+				
+				KochSnowflake(num ,xa, xb, xc, ya, yb, yc);
+			}
+		</script>
+	</head>
+	<body onload="run()">
+		<form>
+			Enter the number of iterations<br>
+			<input type="number" id="num" value="0"><br> 
+			Enter the first coordinate: XA, YA<br>
+			<input type="number" id="xa" value="0"><br>
+			<input type="number" id="ya" value="0"><br>
+			Enter the second coordinate: XB, YB<br>
+			<input type="number" id="xb" value="200"><br>
+			<input type="number" id="yb" value="0"><br>
+			Enter the third coordinate: XC, YC<br>
+			<input type="number" id="xc" value="100"><br>
+			<input type="number" id="yc" value="-173"><br><br>
+			<input type="button" value="Draw" onClick="run()"> 
+		</form>
+
+		<canvas height='1000' width='1000' id='canvas' />
+	</body>
+</html>
